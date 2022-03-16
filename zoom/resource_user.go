@@ -184,20 +184,23 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 	if v, ok := d.GetOk("license_type"); ok {
 		user.Type = v.(int)
 	}
+	var id string
 	retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-		if err := apiClient.NewUser(&user); err != nil {
+		knownId, err := apiClient.NewUser(&user)
+		if err != nil {
 			if apiClient.IsRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		id = knownId
 		return nil
 	})
 	if retryErr != nil {
 		time.Sleep(2 * time.Second)
 		return diag.FromErr(retryErr)
 	}
-	d.SetId(user.Email)
+	d.SetId(id)
 	resourceUserRead(ctx, d, m)
 	return diags
 }
@@ -205,15 +208,16 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 func resourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	apiClient := m.(*client.Client)
-	email := d.Id()
+	id := d.Id()
 	retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-		user, err := apiClient.GetUser(email)
+		user, err := apiClient.GetUser(id)
 		if err != nil {
 			if apiClient.IsRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		d.Set("id", id)
 		d.Set("email", user.Email)
 		d.Set("first_name", user.FirstName)
 		d.Set("last_name", user.LastName)
@@ -286,7 +290,6 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 			old, _ := d.GetChange("status")
 			oldStatus := old.(string)
 			status := v.(string)
-
 			if oldStatus != "pending" || status == "inactive" {
 				var action string
 				if status == "active" {
@@ -440,9 +443,9 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	apiClient := m.(*client.Client)
-	email := d.Id()
+	id := d.Id()
 	retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-		if err := apiClient.DeleteUser(email, d.Get("status").(string)); err != nil {
+		if err := apiClient.DeleteUser(id, d.Get("status").(string)); err != nil {
 			if apiClient.IsRetry(err) {
 				return resource.RetryableError(err)
 			}
@@ -460,16 +463,16 @@ func resourceUserDelete(ctx context.Context, d *schema.ResourceData, m interface
 
 func resourceUserImporter(ctx context.Context, d *schema.ResourceData, m interface{}) ([]*schema.ResourceData, error) {
 	apiClient := m.(*client.Client)
-	email := d.Id()
+	id := d.Id()
 	retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-		user, err := apiClient.GetUser(email)
+		user, err := apiClient.GetUser(id)
 		if err != nil {
 			if apiClient.IsRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
-		d.Set("email", user.Email)
+		d.Set("id", user.Id)
 		d.Set("first_name", user.FirstName)
 		d.Set("last_name", user.LastName)
 		d.Set("license_type", user.Type)

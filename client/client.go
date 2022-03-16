@@ -32,6 +32,11 @@ type User struct {
 	Department     string        `json:"dept,omitempty"`
 	JobTitle       string        `json:"job_title,omitempty"`
 	Location       string        `json:"location,omitempty"`
+	Id             string        `json:"id,omitempty"`
+}
+
+type UserInfo struct {
+	Id string `json:"id,omitempty"`
 }
 
 type PhoneNumber struct {
@@ -55,22 +60,24 @@ func NewClient(token string, timeoutMinutes int) *Client {
 	}
 }
 
-func (c *Client) NewUser(user *User) error {
+func (c *Client) NewUser(user *User) (string, error) {
 	userInfo, err := json.Marshal(user)
 	if err != nil {
-		return err
+		return "", err
 	}
 	body := strings.NewReader(fmt.Sprintf("{\"action\":\"create\",\"user_info\":" + string(userInfo) + "}"))
-	_, err = c.httpRequest("POST", body, "")
+	res, err := c.httpRequest("POST", body, "")
 	if err != nil {
 		log.Println("[CREATE ERROR]: ", err)
-		return err
+		return "", err
 	}
-	return nil
+	created := &UserInfo{}
+	err = json.Unmarshal(res, &created)
+	return created.Id, nil
 }
 
-func (c *Client) GetUser(email string) (*User, error) {
-	body, err := c.httpRequest("GET", &strings.Reader{}, fmt.Sprintf("/%v", email))
+func (c *Client) GetUser(id string) (*User, error) {
+	body, err := c.httpRequest("GET", &strings.Reader{}, fmt.Sprintf("/%v", id))
 	if err != nil {
 		log.Println("[READ ERROR]: ", err)
 		return nil, err
@@ -84,13 +91,13 @@ func (c *Client) GetUser(email string) (*User, error) {
 	return user, nil
 }
 
-func (c *Client) UpdateUser(email string, user *User) error {
+func (c *Client) UpdateUser(id string, user *User) error {
 	userInfo, err := json.Marshal(user)
 	if err != nil {
 		return err
 	}
 	body := strings.NewReader(string(userInfo))
-	_, err = c.httpRequest("PATCH", body, fmt.Sprintf("/%v", email))
+	_, err = c.httpRequest("PATCH", body, fmt.Sprintf("/%v", id))
 	if err != nil {
 		log.Println("[UPDATE ERROR]: ", err)
 		return err
@@ -98,12 +105,12 @@ func (c *Client) UpdateUser(email string, user *User) error {
 	return nil
 }
 
-func (c *Client) DeleteUser(email, status string) error {
+func (c *Client) DeleteUser(id, status string) error {
 	var err error
 	if status == "pending" {
-		_, err = c.httpRequest("DELETE", &strings.Reader{}, fmt.Sprintf("/%s", email))
+		_, err = c.httpRequest("DELETE", &strings.Reader{}, fmt.Sprintf("/%s", id))
 	} else {
-		_, err = c.httpRequest("DELETE", &strings.Reader{}, fmt.Sprintf("/%s?action=delete", email))
+		_, err = c.httpRequest("DELETE", &strings.Reader{}, fmt.Sprintf("/%s?action=delete", id))
 	}
 	if err != nil {
 		log.Println("[DELETE ERROR]: ", err)
@@ -112,10 +119,10 @@ func (c *Client) DeleteUser(email, status string) error {
 	return nil
 }
 
-func (c *Client) ChangeUserStatus(email, action string) error {
+func (c *Client) ChangeUserStatus(id, action string) error {
 	action = fmt.Sprintf("{\"action\":\"%s\"}", action)
 	body := strings.NewReader(action)
-	_, err := c.httpRequest("PUT", body, fmt.Sprintf("/%s/status", email))
+	_, err := c.httpRequest("PUT", body, fmt.Sprintf("/%s/status", id))
 	if err != nil {
 		log.Println("[DEACTIVATE/ACTIVATE ERROR]: ", err)
 		return err
