@@ -22,3 +22,4 @@ planfile*
 *backend.config
 errored.tfstate
 *.idea
+*~

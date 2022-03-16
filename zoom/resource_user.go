@@ -32,6 +32,11 @@ func resourceUser() *schema.Resource {
 			StateContext: resourceUserImporter,
 		},
 		Schema: map[string]*schema.Schema{
+			"id": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
 			"email": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
@@ -201,6 +206,7 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(retryErr)
 	}
 	d.SetId(id)
+	d.Set("email", user.Email)
 	resourceUserRead(ctx, d, m)
 	return diags
 }
@@ -472,6 +478,7 @@ func resourceUserImporter(ctx context.Context, d *schema.ResourceData, m interfa
 			}
 			return resource.NonRetryableError(err)
 		}
+		d.SetId(user.Id)
 		d.Set("id", user.Id)
 		d.Set("first_name", user.FirstName)
 		d.Set("last_name", user.LastName)
