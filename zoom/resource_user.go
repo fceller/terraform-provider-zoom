@@ -283,25 +283,30 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 	}
 	if d.HasChange("status") {
 		if v, ok := d.GetOk("status"); ok {
+			old, _ := d.GetChange("status")
+			oldStatus := old.(string)
 			status := v.(string)
-			var action string
-			if status == "active" {
-				action = "activate"
-			} else if status == "inactive" {
-				action = "deactivate"
-			}
-			retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-				if err := apiClient.ChangeUserStatus(d.Id(), action); err != nil {
-					if apiClient.IsRetry(err) {
-						return resource.RetryableError(err)
-					}
-					return resource.NonRetryableError(err)
+
+			if oldStatus != "pending" || status == "inactive" {
+				var action string
+				if status == "active" {
+					action = "activate"
+				} else if status == "inactive" {
+					action = "deactivate"
 				}
-				return nil
-			})
-			if retryErr != nil {
-				time.Sleep(2 * time.Second)
-				return diag.FromErr(retryErr)
+				retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
+					if err := apiClient.ChangeUserStatus(d.Id(), action); err != nil {
+						if apiClient.IsRetry(err) {
+							return resource.RetryableError(err)
+						}
+						return resource.NonRetryableError(err)
+					}
+					return nil
+				})
+				if retryErr != nil {
+					time.Sleep(2 * time.Second)
+					return diag.FromErr(retryErr)
+				}
 			}
 		}
 	} else {
