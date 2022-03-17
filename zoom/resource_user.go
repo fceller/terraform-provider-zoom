@@ -32,115 +32,115 @@ func resourceUser() *schema.Resource {
 			StateContext: resourceUserImporter,
 		},
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"email": &schema.Schema{
+			"email": {
 				Type:         schema.TypeString,
 				Required:     true,
 				ValidateFunc: validateEmail,
 			},
-			"first_name": &schema.Schema{
+			"first_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"last_name": &schema.Schema{
+			"last_name": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"status": &schema.Schema{
+			"status": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"license_type": &schema.Schema{
+			"license_type": {
 				Type:     schema.TypeInt,
 				Required: true,
 			},
-			"pmi": &schema.Schema{
+			"pmi": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"use_pmi": &schema.Schema{
+			"use_pmi": {
 				Type:     schema.TypeBool,
 				Optional: true,
 				Computed: true,
 			},
-			"timezone": &schema.Schema{
+			"timezone": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"language": &schema.Schema{
+			"language": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"vanity_name": &schema.Schema{
+			"vanity_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"host_key": &schema.Schema{
+			"host_key": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"cms_user_id": &schema.Schema{
+			"cms_user_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"company": &schema.Schema{
+			"company": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"group_id": &schema.Schema{
+			"group_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"manager": &schema.Schema{
+			"manager": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"pronouns": &schema.Schema{
+			"pronouns": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"pronouns_option": &schema.Schema{
+			"pronouns_option": {
 				Type:     schema.TypeInt,
 				Optional: true,
 				Computed: true,
 			},
-			"phone_numbers": &schema.Schema{
+			"phone_numbers": {
 				Type:     schema.TypeSet,
 				Optional: true,
 				Computed: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
-						"country": &schema.Schema{
+						"country": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
-						"code": &schema.Schema{
+						"code": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
-						"number": &schema.Schema{
+						"number": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
 						},
-						"label": &schema.Schema{
+						"label": {
 							Type:     schema.TypeString,
 							Optional: true,
 							Computed: true,
@@ -148,22 +148,22 @@ func resourceUser() *schema.Resource {
 					},
 				},
 			},
-			"role_name": &schema.Schema{
+			"role_name": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"department": &schema.Schema{
+			"department": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"job_title": &schema.Schema{
+			"job_title": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
 			},
-			"location": &schema.Schema{
+			"location": {
 				Type:     schema.TypeString,
 				Optional: true,
 				Computed: true,
@@ -206,8 +206,8 @@ func resourceUserCreate(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(retryErr)
 	}
 	d.SetId(id)
-	d.Set("email", user.Email)
 	resourceUserRead(ctx, d, m)
+	d.Set("email", user.Email)
 	return diags
 }
 
@@ -272,7 +272,11 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 	var _ diag.Diagnostics
 	apiClient := m.(*client.Client)
 	var diags diag.Diagnostics
-	if d.HasChange("email") {
+
+	oldI, statusI := d.GetChange("status")
+	isPending := oldI.(string) == "pending"
+
+	if !isPending && d.HasChange("email") {
 		if v, ok := d.GetOk("email"); ok {
 			newEmail := v.(string)
 			retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
@@ -291,31 +295,27 @@ func resourceUserUpdate(ctx context.Context, d *schema.ResourceData, m interface
 			d.SetId(newEmail)
 		}
 	}
-	if d.HasChange("status") {
-		if v, ok := d.GetOk("status"); ok {
-			old, _ := d.GetChange("status")
-			oldStatus := old.(string)
-			status := v.(string)
-			if oldStatus != "pending" || status == "inactive" {
-				var action string
-				if status == "active" {
-					action = "activate"
-				} else if status == "inactive" {
-					action = "deactivate"
-				}
-				retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-					if err := apiClient.ChangeUserStatus(d.Id(), action); err != nil {
-						if apiClient.IsRetry(err) {
-							return resource.RetryableError(err)
-						}
-						return resource.NonRetryableError(err)
+	if isPending || d.HasChange("status") {
+		status := statusI.(string)
+		if !isPending || status == "inactive" {
+			var action string
+			if status == "active" {
+				action = "activate"
+			} else if status == "inactive" {
+				action = "deactivate"
+			}
+			retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
+				if err := apiClient.ChangeUserStatus(d.Id(), action); err != nil {
+					if apiClient.IsRetry(err) {
+						return resource.RetryableError(err)
 					}
-					return nil
-				})
-				if retryErr != nil {
-					time.Sleep(2 * time.Second)
-					return diag.FromErr(retryErr)
+					return resource.NonRetryableError(err)
 				}
+				return nil
+			})
+			if retryErr != nil {
+				time.Sleep(2 * time.Second)
+				return diag.FromErr(retryErr)
 			}
 		}
 	} else {

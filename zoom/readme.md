@@ -14,7 +14,8 @@
 
 1-make TF_ACC = true (set environment variable,this is to run the acceptance testing) <br />
 
-2-Hashicorp has provider some inbuilt packages which we can use to implemet our testing ie. resource("github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource") <br />
+2-Hashicorp has provider some inbuilt packages which we can use to implemet our testing ie. resource("
+github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource") <br />
 
 3-we set up a resource.Test and provide it with the following: <br />
 PreCheck,Providers,CheckDestroy,Steps <br />

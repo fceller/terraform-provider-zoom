@@ -97,7 +97,7 @@ func TestClient_NewItem(t *testing.T) {
 		t.Run(tc.testName, func(t *testing.T) {
 			apiToken := token.GenerateToken(os.Getenv("ZOOM_API_SECRET"), os.Getenv(os.Getenv("ZOOM_API_KEY")))
 			client := NewClient(apiToken, 2)
-			err := client.NewUser(tc.user)
+			_, err := client.NewUser(tc.user)
 			if tc.expectErr {
 				assert.Error(t, err)
 				return
