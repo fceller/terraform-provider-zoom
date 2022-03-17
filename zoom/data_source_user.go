@@ -13,6 +13,10 @@ func dataSourceUser() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceUserRead,
 		Schema: map[string]*schema.Schema{
+			"id": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"email": &schema.Schema{
 				Type:         schema.TypeString,
 				Required:     true,
@@ -129,18 +133,19 @@ func dataSourceUser() *schema.Resource {
 func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
 	var diags diag.Diagnostics
 	apiClient := m.(*client.Client)
-	var email string
-	if v, ok := d.GetOk("email"); ok {
-		email = v.(string)
+	var id string
+	if v, ok := d.GetOk("id"); ok {
+		id = v.(string)
 	}
 	retryErr := resource.Retry(time.Duration(apiClient.TimeoutMinutes)*time.Minute, func() *resource.RetryError {
-		user, err := apiClient.GetUser(email)
+		user, err := apiClient.GetUser(id)
 		if err != nil {
 			if apiClient.IsRetry(err) {
 				return resource.RetryableError(err)
 			}
 			return resource.NonRetryableError(err)
 		}
+		d.Set("id", id)
 		d.Set("email", user.Email)
 		d.Set("first_name", user.FirstName)
 		d.Set("last_name", user.LastName)
@@ -171,7 +176,7 @@ func dataSourceUserRead(ctx context.Context, d *schema.ResourceData, m interface
 		d.Set("department", user.Department)
 		d.Set("job_title", user.JobTitle)
 		d.Set("location", user.Location)
-		d.SetId(email)
+		d.SetId(id)
 		return nil
 	})
 	if retryErr != nil {
