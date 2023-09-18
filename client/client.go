@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -52,9 +53,13 @@ type Client struct {
 	httpClient     *http.Client
 }
 
-func NewClient(token string, timeoutMinutes int) *Client {
+type AuthInfo struct {
+	AccessToken string `json:"access_token,omitempty"`
+}
+
+func NewClient(authToken string, timeoutMinutes int) *Client {
 	return &Client{
-		authToken:      token,
+		authToken:      authToken,
 		TimeoutMinutes: timeoutMinutes,
 		httpClient:     &http.Client{},
 	}
@@ -137,6 +142,45 @@ func (c *Client) ChangeEmail(oldEmail, newEmail string) error {
 		log.Println("[UPDATE ERROR]: ", err)
 		return err
 	}
+	return nil
+}
+
+func (c *Client) GenerateToken(accountId, clientId, clientSecret string) error {
+	data := url.Values{}
+	data.Set("grant_type", "account_credentials")
+	data.Set("account_id", accountId)
+
+	req, err := http.NewRequest(http.MethodPost, "https://zoom.us/oauth/token", strings.NewReader(data.Encode()))
+	if err != nil {
+		return err
+	}
+
+	req.SetBasicAuth(clientId, clientSecret)
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := c.httpClient.Do(req)
+	if err != nil {
+		log.Println("[ERROR]: ", err)
+		return err
+	}
+
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Println("[ERROR]: ", err)
+		return err
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf(string(respBody) + fmt.Sprintf(", StatusCode: %v", resp.StatusCode))
+	}
+
+	info := &AuthInfo{}
+	err = json.Unmarshal(respBody, &info)
+	if err != nil {
+		return err
+	}
+
+	c.authToken = info.AccessToken
 	return nil
 }
 

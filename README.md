@@ -19,9 +19,9 @@ This terraform provider allows to perform Create ,Read ,Update, Delete, Import a
 
 1. Go to [Zoom Marketplace](https://marketplace.zoom.us/)<br>
 2. Click on `Build App`. For our purpose we need to make a JWT App. <br>
-3. Follow this [Create JWT Zoom App](https://marketplace.zoom.us/docs/guides/build/jwt-app) website to make an app. <br>
-4. This app will provide us with the zoom_api_secret, zoom_api_key, and ZOOM_TOKEN which will be needed to configure our
-   provider and make request. <br>
+3. Create a server-to-server application.
+4. This app will provide us with the ZOOM_ACCOUNT_ID, ZOOM_CLIENT_ID, and ZOOM_CLIENT_SECRET which will be needed
+   to configure our provider and make request. <br>
 
 ## Building the Provider
 
@@ -119,8 +119,9 @@ terraform {
 }
 
 provider "zoom" {
-  zoom_api_key = "[ZOOM_API_KEY]"
-  zoom_api_secret = "[ZOOM_API_SECRET]"
+  zoom_account_id = "[ZOOM_ACCOUNT_ID]"
+  zoom_client_id = "[ZOOM_CLIENT_ID]"
+  zoom_client_secret = "[ZOOM_CLIENT_SECRET]"
   timeout_minutes = 3
 }
 
@@ -146,9 +147,11 @@ output "user1" {
 
 ## Argument Reference
 
-* `zoom_api_key`(Required, string)     - The Zoom API Key. This may also be set via the `"ZOOM_API_KEY"` environment
+* `zoom_account_id`(Required, string)     - The Zoom Account ID. This may also be set via the `"ZOOM_ACCOUNT_ID"` environment
   variable.
-* `zoom_api_secret`(Required, string)  - The Zoom API Secret. This may also be set via the `"ZOOM_API_SECRET"`
+* `zoom_client_id`(Required, string)  - The Zoom Client ID. This may also be set via the `"ZOOM_CLIENT_ID"`
+  environment variable.
+* `zoom_client_secret`(Required, string)  - The Zoom Client secret. This may also be set via the `"ZOOM_CLIENT_SECRET"`
   environment variable.
 * `timeout_minutes` (Optional, int)    - The duration for which retries to be performed when an API request fails with
   API Rate limit error. This may also be set via the `"ZOOM_TIMEOUT_MINUTES"` environment variable. Default value is 2.
@@ -175,18 +178,3 @@ output "user1" {
 * `pronouns`(Optional, string)         - User's pronouns.
 * `pronouns_option`(Optional, int)     - User's display pronouns setting.
 * `role_name`(Computed, string)        - Current role of the user i.e., (Admin,Member).
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -4,7 +4,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"log"
 	"os"
-	"terraform-provider-zoom/token"
 	"testing"
 )
 
@@ -41,8 +40,11 @@ func TestClient_GetUser(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			apiToken := token.GenerateToken(os.Getenv("ZOOM_API_SECRET"), os.Getenv(os.Getenv("ZOOM_API_KEY")))
-			client := NewClient(apiToken, 2)
+			client := NewClient("", 2)
+			accountId := os.Getenv("ZOOM_ACCOUNT_ID")
+			clientId := os.Getenv("ZOOM_CLIENT_ID")
+			clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+			client.GenerateToken(accountId, clientId, clientSecret)
 			user, err := client.GetUser(tc.email)
 			if tc.expectErr {
 				assert.Error(t, err)
@@ -95,8 +97,11 @@ func TestClient_NewItem(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			apiToken := token.GenerateToken(os.Getenv("ZOOM_API_SECRET"), os.Getenv(os.Getenv("ZOOM_API_KEY")))
-			client := NewClient(apiToken, 2)
+			client := NewClient("", 2)
+			accountId := os.Getenv("ZOOM_ACCOUNT_ID")
+			clientId := os.Getenv("ZOOM_CLIENT_ID")
+			clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+			client.GenerateToken(accountId, clientId, clientSecret)
 			_, err := client.NewUser(tc.user)
 			if tc.expectErr {
 				assert.Error(t, err)
@@ -149,8 +154,11 @@ func TestClient_UpdateUser(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			apiToken := token.GenerateToken(os.Getenv("ZOOM_API_SECRET"), os.Getenv(os.Getenv("ZOOM_API_KEY")))
-			client := NewClient(apiToken, 2)
+			client := NewClient("", 2)
+			accountId := os.Getenv("ZOOM_ACCOUNT_ID")
+			clientId := os.Getenv("ZOOM_CLIENT_ID")
+			clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+			client.GenerateToken(accountId, clientId, clientSecret)
 			err := client.UpdateUser(tc.user.Email, tc.user)
 			if tc.expectErr {
 				assert.Error(t, err)
@@ -177,8 +185,11 @@ func TestClient_DeleteUser(t *testing.T) {
 	}
 	for _, tc := range testCases {
 		t.Run(tc.testName, func(t *testing.T) {
-			apiToken := token.GenerateToken(os.Getenv("ZOOM_API_SECRET"), os.Getenv(os.Getenv("ZOOM_API_KEY")))
-			client := NewClient(apiToken, 2)
+			client := NewClient("", 2)
+			accountId := os.Getenv("ZOOM_ACCOUNT_ID")
+			clientId := os.Getenv("ZOOM_CLIENT_ID")
+			clientSecret := os.Getenv("ZOOM_CLIENT_SECRET")
+			client.GenerateToken(accountId, clientId, clientSecret)
 			err := client.DeleteUser(tc.email, "pending")
 			log.Println(err)
 			if tc.expectErr {
