@@ -3,7 +3,7 @@ package client
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -164,7 +164,7 @@ func (c *Client) GenerateToken(accountId, clientId, clientSecret string) error {
 		return err
 	}
 
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("[ERROR]: ", err)
 		return err
@@ -198,7 +198,7 @@ func (c *Client) httpRequest(method string, body *strings.Reader, path string) (
 		log.Println("[ERROR]: ", err)
 		return nil, err
 	}
-	respBody, err := ioutil.ReadAll(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, err
 	}

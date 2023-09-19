@@ -1,9 +1,10 @@
 package zoom
 
 import (
+	"context"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"terraform-provider-zoom/client"
-	"terraform-provider-zoom/token"
 )
 
 func Provider() *schema.Provider {
@@ -36,13 +37,13 @@ func Provider() *schema.Provider {
 		DataSourcesMap: map[string]*schema.Resource{
 			"zoom_user": dataSourceUser(),
 		},
-		ConfigureFunc: providerConfigure,
+		ConfigureContextFunc: providerConfigure,
 	}
 }
 
-func providerConfigure(d *schema.ResourceData) (interface{}, error) {
+func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	var accountId string
-	if v, ok := d.GetOk("zoom_client_id"); ok {
+	if v, ok := d.GetOk("zoom_account_id"); ok {
 		accountId = v.(string)
 	}
 
@@ -62,7 +63,10 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	}
 
 	c := client.NewClient("", timeoutMinutes)
-	err := token.GenerateToken(c, accountId, clientId, clientSecret)
+	err := c.GenerateToken(accountId, clientId, clientSecret)
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
 
-	return c, err
+	return c, nil
 }
